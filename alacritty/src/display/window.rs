@@ -378,12 +378,19 @@ impl Window {
     #[cfg(windows)]
     fn set_blur_windows(&self, blur: bool) -> bool {
         use std::mem;
-        use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
         use windows_sys::Win32::Foundation::HWND;
-        use windows_sys::Win32::UI::WindowsAndMessaging::SetWindowCompositionAttribute;
 
-        let handle = match self.raw_window_handle() {
-            RawWindowHandle::Win32(handle) => handle.hwnd.get() as HWND,
+        // SetWindowCompositionAttribute is an undocumented Windows API function
+        // that's not included in windows-sys, so we need to define it ourselves
+        extern "system" {
+            fn SetWindowCompositionAttribute(
+                hwnd: HWND,
+                data: *const std::ffi::c_void,
+            ) -> i32;
+        }
+
+        let handle = match self.window.raw_window_handle() {
+            Ok(RawWindowHandle::Win32(handle)) => handle.hwnd.get() as HWND,
             _ => return false,
         };
 
